@@ -4,6 +4,7 @@ use chacha20poly1305::{
     ChaCha20Poly1305, XChaCha20Poly1305,
 };
 use criterion::*;
+use evercrypt::prelude::*;
 use rand::RngCore;
 
 fn bench(c: &mut Criterion) {
@@ -27,6 +28,8 @@ fn bench(c: &mut Criterion) {
     let ring_key_aesgcm = black_box(ring::aead::LessSafeKey::new(
         ring::aead::UnboundKey::new(&ring::aead::AES_256_GCM, &key).unwrap(),
     ));
+    let evercrypt_aes_gcm = black_box(Aead::new(AeadMode::Aes256Gcm, &key).unwrap());
+    let evercrypt_chacha_poly = black_box(Aead::new(AeadMode::Chacha20Poly1305, &key).unwrap());
 
     let mut group = c.benchmark_group("100B");
     group.throughput(Throughput::Bytes(in_out.len() as u64));
@@ -53,16 +56,26 @@ fn bench(c: &mut Criterion) {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_chacha20
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_chacha20.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
         });
     });
     group.bench_function("ring AES-256-GCM", |b| {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_aesgcm
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_aesgcm.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+        });
+    });
+    group.bench_function("HACL* AES-256-GCM", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_aes_gcm.encrypt(&in_out, &nonce_96, &ad).unwrap();
+        });
+    });
+    group.bench_function("HACL* ChaCha20-Poly1305", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_chacha_poly
+                .encrypt(&in_out, &nonce_96, &ad)
+                .unwrap();
         });
     });
     group.finish();
@@ -78,6 +91,8 @@ fn bench(c: &mut Criterion) {
     let ring_key_aesgcm = black_box(ring::aead::LessSafeKey::new(
         ring::aead::UnboundKey::new(&ring::aead::AES_256_GCM, &key).unwrap(),
     ));
+    let evercrypt_aes_gcm = black_box(Aead::new(AeadMode::Aes256Gcm, &key).unwrap());
+    let evercrypt_chacha_poly = black_box(Aead::new(AeadMode::Chacha20Poly1305, &key).unwrap());
 
     let mut group = c.benchmark_group("1kB");
     group.throughput(Throughput::Bytes(in_out.len() as u64));
@@ -104,16 +119,26 @@ fn bench(c: &mut Criterion) {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_chacha20
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_chacha20.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
         });
     });
     group.bench_function("ring AES-256-GCM", |b| {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_aesgcm
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_aesgcm.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+        });
+    });
+    group.bench_function("HACL* AES-256-GCM", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_aes_gcm.encrypt(&in_out, &nonce_96, &ad).unwrap();
+        });
+    });
+    group.bench_function("HACL* ChaCha20-Poly1305", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_chacha_poly
+                .encrypt(&in_out, &nonce_96, &ad)
+                .unwrap();
         });
     });
     group.finish();
@@ -129,6 +154,8 @@ fn bench(c: &mut Criterion) {
     let ring_key_aesgcm = black_box(ring::aead::LessSafeKey::new(
         ring::aead::UnboundKey::new(&ring::aead::AES_256_GCM, &key).unwrap(),
     ));
+    let evercrypt_aes_gcm = black_box(Aead::new(AeadMode::Aes256Gcm, &key).unwrap());
+    let evercrypt_chacha_poly = black_box(Aead::new(AeadMode::Chacha20Poly1305, &key).unwrap());
 
     let mut group = c.benchmark_group("100kB");
     group.throughput(Throughput::Bytes(in_out.len() as u64));
@@ -155,16 +182,26 @@ fn bench(c: &mut Criterion) {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_chacha20
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_chacha20.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
         });
     });
     group.bench_function("ring AES-256-GCM", |b| {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_aesgcm
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_aesgcm.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+        });
+    });
+    group.bench_function("HACL* AES-256-GCM", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_aes_gcm.encrypt(&in_out, &nonce_96, &ad).unwrap();
+        });
+    });
+    group.bench_function("HACL* ChaCha20-Poly1305", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_chacha_poly
+                .encrypt(&in_out, &nonce_96, &ad)
+                .unwrap();
         });
     });
     group.finish();
@@ -180,6 +217,8 @@ fn bench(c: &mut Criterion) {
     let ring_key_aesgcm = black_box(ring::aead::LessSafeKey::new(
         ring::aead::UnboundKey::new(&ring::aead::AES_256_GCM, &key).unwrap(),
     ));
+    let evercrypt_aes_gcm = black_box(Aead::new(AeadMode::Aes256Gcm, &key).unwrap());
+    let evercrypt_chacha_poly = black_box(Aead::new(AeadMode::Chacha20Poly1305, &key).unwrap());
 
     let mut group = c.benchmark_group("1MB");
     group.throughput(Throughput::Bytes(in_out.len() as u64));
@@ -206,16 +245,26 @@ fn bench(c: &mut Criterion) {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_chacha20
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_chacha20.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
         });
     });
     group.bench_function("ring AES-256-GCM", |b| {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_aesgcm
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_aesgcm.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+        });
+    });
+    group.bench_function("HACL* AES-256-GCM", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_aes_gcm.encrypt(&in_out, &nonce_96, &ad).unwrap();
+        });
+    });
+    group.bench_function("HACL* ChaCha20-Poly1305", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_chacha_poly
+                .encrypt(&in_out, &nonce_96, &ad)
+                .unwrap();
         });
     });
     group.finish();
@@ -231,6 +280,8 @@ fn bench(c: &mut Criterion) {
     let ring_key_aesgcm = black_box(ring::aead::LessSafeKey::new(
         ring::aead::UnboundKey::new(&ring::aead::AES_256_GCM, &key).unwrap(),
     ));
+    let evercrypt_aes_gcm = black_box(Aead::new(AeadMode::Aes256Gcm, &key).unwrap());
+    let evercrypt_chacha_poly = black_box(Aead::new(AeadMode::Chacha20Poly1305, &key).unwrap());
 
     let mut group = c.benchmark_group("10MB");
     group.throughput(Throughput::Bytes(in_out.len() as u64));
@@ -257,16 +308,26 @@ fn bench(c: &mut Criterion) {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_chacha20
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_chacha20.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
         });
     });
     group.bench_function("ring AES-256-GCM", |b| {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_aesgcm
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_aesgcm.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+        });
+    });
+    group.bench_function("HACL* AES-256-GCM", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_aes_gcm.encrypt(&in_out, &nonce_96, &ad).unwrap();
+        });
+    });
+    group.bench_function("HACL* ChaCha20-Poly1305", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_chacha_poly
+                .encrypt(&in_out, &nonce_96, &ad)
+                .unwrap();
         });
     });
     group.finish();
@@ -282,6 +343,8 @@ fn bench(c: &mut Criterion) {
     let ring_key_aesgcm = black_box(ring::aead::LessSafeKey::new(
         ring::aead::UnboundKey::new(&ring::aead::AES_256_GCM, &key).unwrap(),
     ));
+    let evercrypt_aes_gcm = black_box(Aead::new(AeadMode::Aes256Gcm, &key).unwrap());
+    let evercrypt_chacha_poly = black_box(Aead::new(AeadMode::Chacha20Poly1305, &key).unwrap());
 
     let mut group = c.benchmark_group("100MB");
     group.throughput(Throughput::Bytes(in_out.len() as u64));
@@ -308,16 +371,26 @@ fn bench(c: &mut Criterion) {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_chacha20
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_chacha20.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
         });
     });
     group.bench_function("ring AES-256-GCM", |b| {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_aesgcm
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_aesgcm.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+        });
+    });
+    group.bench_function("HACL* AES-256-GCM", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_aes_gcm.encrypt(&in_out, &nonce_96, &ad).unwrap();
+        });
+    });
+    group.bench_function("HACL* ChaCha20-Poly1305", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_chacha_poly
+                .encrypt(&in_out, &nonce_96, &ad)
+                .unwrap();
         });
     });
     group.finish();
@@ -333,6 +406,8 @@ fn bench(c: &mut Criterion) {
     let ring_key_aesgcm = black_box(ring::aead::LessSafeKey::new(
         ring::aead::UnboundKey::new(&ring::aead::AES_256_GCM, &key).unwrap(),
     ));
+    let evercrypt_aes_gcm = black_box(Aead::new(AeadMode::Aes256Gcm, &key).unwrap());
+    let evercrypt_chacha_poly = black_box(Aead::new(AeadMode::Chacha20Poly1305, &key).unwrap());
 
     let mut group = c.benchmark_group("1GB");
     group.throughput(Throughput::Bytes(in_out.len() as u64));
@@ -359,16 +434,26 @@ fn bench(c: &mut Criterion) {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_chacha20
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_chacha20.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
         });
     });
     group.bench_function("ring AES-256-GCM", |b| {
         b.iter(|| {
             let ring_nonce = ring::aead::Nonce::assume_unique_for_key(nonce_96);
             let ring_ad = ring::aead::Aad::from(black_box(&ad));
-            ring_key_aesgcm
-                .seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+            ring_key_aesgcm.seal_in_place_separate_tag(ring_nonce, ring_ad, &mut in_out)
+        });
+    });
+    group.bench_function("HACL* AES-256-GCM", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_aes_gcm.encrypt(&in_out, &nonce_96, &ad).unwrap();
+        });
+    });
+    group.bench_function("HACL* ChaCha20-Poly1305", |b| {
+        b.iter(|| {
+            let (_ct, _tag) = evercrypt_chacha_poly
+                .encrypt(&in_out, &nonce_96, &ad)
+                .unwrap();
         });
     });
     group.finish();
